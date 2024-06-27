@@ -60,7 +60,7 @@ namespace ConsoleApp1
                                 byte[] imageBytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
                                 File.WriteAllBytes($@"{propPath}\{count}.jpeg", imageBytes);
-
+                                 
                                 count++;
                             }
                         }
