@@ -15,35 +15,41 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            Dictionary<string, Dictionary<string, string>> data = ReadExcelFile();
+            string[] paths = new string[]
+            {
+                @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181bD1LcCYLacEdL1FKaQF8HRQSFff4U0EQAKMcUC6g3UDPeKQ3M9.xlsx",
+                @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181bX09KRW4VZ4RG7MKUJ1Af7ebORZUVNC22JIDPIZFF0HI5OUXfC.xlsx",
+                @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181LWEQJVNgCPbCJSUeBe6ILfcLWTE7LcXa7HQ3gOAaae44FXMIE7.xlsx",
+                @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181GeDMXTQKFUVdeZVFRJUObBBPJHAMIYHOfA5LZZSCVc0eDCg3Og.xlsx",
+      
+            };
+
+            Dictionary<string, Dictionary<string, string>> data = ReadExcelFile(paths[3]);
 
             GuardarImagen(data);
         }
 
-
         public static void GuardarImagen(Dictionary<string, Dictionary<string, string>> data)
         {
-
-            //string url = "https://demoazimg.prop360.cl/unne/img/propiedades/79772_clkSAxQjeh5hs6afOvtl20240624001706.jpeg";
-            string path = @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Test\Img";
-
             try
             {
-
-
                 using (HttpClient client = new HttpClient())
                 {
 
-                    foreach(KeyValuePair<string,Dictionary<string, string>> docSet in data)
+                    foreach (KeyValuePair<string, Dictionary<string, string>> docSet in data)
                     {
-                        string propPath = $@"C:\Users\accio\OneDrive\Escritorio\Respaldo\Test\Img\{docSet.Key}";
-
-
+                        string propPath = $@"C:\Users\accio\OneDrive\Escritorio\Respaldo\Test\Img\{docSet.Key.Replace(".","")}";//Panal 2
+                        //string propPath = $@"C:\Users\cfuen\OneDrive\Escritorio\Imagenes pásivas\Img\{docSet.Key.Replace(".", "")}";//Panal 2
+                        Console.WriteLine(docSet.Key);
 
                         if (!Directory.Exists(propPath))
                         {
                             Directory.CreateDirectory(propPath);
+                        }
 
+                        if (Directory.GetFiles(propPath).Length >= docSet.Value.Count)
+                        {
+                            continue;
                         }
 
                         int count = 0;
@@ -55,17 +61,26 @@ namespace ConsoleApp1
                                 string url = doc.Key;
                                 HttpResponseMessage response = client.GetAsync(url).GetAwaiter().GetResult();
 
-                                response.EnsureSuccessStatusCode();
+                                Console.WriteLine(doc.Key);
+
+                                if (!response.IsSuccessStatusCode)
+                                {
+                                    Console.WriteLine(response.StatusCode);
+                                    Console.BackgroundColor = ConsoleColor.Red;
+                                    continue;
+                                };
 
                                 byte[] imageBytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
 
                                 File.WriteAllBytes($@"{propPath}\{count}.jpeg", imageBytes);
-                                 
+
                                 count++;
                             }
                         }
                     }
 
+                    Beep();
+
                     Console.WriteLine("Ok");
                 }
             }
@@ -74,52 +89,18 @@ namespace ConsoleApp1
 
                 Console.WriteLine(ex.Message);
             }
-        }
-
-        public static void GuardarImagen()
-        {
-
-            string url = "https://demoazimg.prop360.cl/unne/img/propiedades/79772_clkSAxQjeh5hs6afOvtl20240624001706.jpeg";
-            string path = @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Test\Img";
-
-            try
+            finally
             {
-
-                using (HttpClient client = new HttpClient())
-                {
-                    HttpResponseMessage response = client.GetAsync(url).GetAwaiter().GetResult();
-
-                    response.EnsureSuccessStatusCode();
-
-                    byte[] imageBytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
-
-
-                    if (!Directory.Exists(path))
-                    {
-                        Directory.CreateDirectory(path);
-
-                    }
-
-                    File.WriteAllBytes($@"{path}\2.jpeg", imageBytes);
-
-                    Console.WriteLine("Ok");
-
-                }
-            }
-            catch (Exception ex)
-            {
-
-                Console.WriteLine(ex.Message);
+                Beep();
             }
         }
 
-        //static void ReadExcelFile(string filePath)
-        static Dictionary<string, Dictionary<string, string>> ReadExcelFile()
+        static Dictionary<string, Dictionary<string, string>> ReadExcelFile(string filePath)
         {
 
-            string filePath = @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181bD1LcCYLacEdL1FKaQF8HRQSFff4U0EQAKMcUC6g3UDPeKQ3M9.xlsx";
+            //string filePath = @"C:\Users\accio\OneDrive\Escritorio\Respaldo\Unne\Multimedia\propMultimedia_0181bD1LcCYLacEdL1FKaQF8HRQSFff4U0EQAKMcUC6g3UDPeKQ3M9.xlsx";
 
-            
+
             //ExcelPackage.LicenseContext = LicenseContext.Commercial;
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -129,19 +110,16 @@ namespace ConsoleApp1
 
             using (ExcelPackage package = new ExcelPackage(fileInfo))
             {
-                // Get the first worksheet in the workbook
                 ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
-                // Get the number of rows and columns in the worksheet
                 int rowCount = worksheet.Dimension.Rows;
                 int colCount = worksheet.Dimension.Columns;
 
-                Dictionary<string, Dictionary<string, string>> data = new   Dictionary<string, Dictionary<string, string>>();
+                Dictionary<string, Dictionary<string, string>> data = new Dictionary<string, Dictionary<string, string>>();
 
                 string idProp = "";
 
-                // Loop through the worksheet rows and columns
-                for (int row = 7; row <= rowCount; row++)
+                for (int row = 91461; row <= rowCount; row++)
                 {
 
                     for (int col = 1; col <= colCount; col++)
@@ -153,7 +131,7 @@ namespace ConsoleApp1
                             {
                                 data.Add(idProp, new Dictionary<string, string>());
                             }
-                            
+
                         }
                         else if (col == 4)
                         {
@@ -162,16 +140,20 @@ namespace ConsoleApp1
                                 data[idProp].Add(worksheet.Cells[row, col].Text, worksheet.Cells[row, 3].Text);
                             }
                         }
-
-                        //var cellValue = worksheet.Cells[row, col].Text;
-                        //Console.Write($"{cellValue}\t");
                     }
-                    //Console.WriteLine();
                 }
 
                 return data;
             }
+        }
 
+        public static void Beep()
+        {
+            Console.Beep();
+            Console.Beep();
+            Console.Beep();
+            Console.Beep();
+            Console.Beep();
         }
     }
 }
